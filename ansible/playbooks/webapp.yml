@@ -1,0 +1,6 @@
+---
+# Standalone Web Application Deployment Playbook
+- name: Deploy Web Application
+  hosts: webservers
+  roles:
+    - role: webapp

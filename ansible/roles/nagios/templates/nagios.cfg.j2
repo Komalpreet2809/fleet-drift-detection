@@ -1,0 +1,23 @@
+###############################################################################
+# INT333: Nagios Core Main Configuration File
+###############################################################################
+
+log_file=/usr/local/nagios/var/nagios.log
+
+# Custom object configuration files
+cfg_file={{ nagios_config_dir }}/objects/commands.cfg
+cfg_file={{ nagios_config_dir }}/objects/hosts.cfg
+cfg_file={{ nagios_config_dir }}/objects/services.cfg
+
+nagios_user={{ nagios_user }}
+nagios_group={{ nagios_group }}
+
+check_external_commands=1
+interval_length=60
+execute_service_checks=1
+accept_passive_service_checks=1
+execute_host_checks=1
+accept_passive_host_checks=1
+enable_notifications=1
+enable_event_handlers=1
+process_performance_data=1

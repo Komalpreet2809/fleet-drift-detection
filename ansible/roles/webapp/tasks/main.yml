@@ -1,0 +1,48 @@
+---
+# Tasks for Deploying Web Application (INT333 Practical & Rubric Implementation)
+
+- name: Create application system user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Create application base directory
+  ansible.builtin.file:
+    path: "{{ app_directory }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Install required Python dependencies
+  ansible.builtin.pip:
+    name: "{{ python_packages }}"
+    state: present
+  ignore_errors: true
+
+- name: Copy Flask application file
+  ansible.builtin.copy:
+    src: app.py
+    dest: "{{ app_directory }}/app.py"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  notify: Restart webapp
+
+- name: Deploy systemd service unit from Jinja2 template
+  ansible.builtin.template:
+    src: app.service.j2
+    dest: "/etc/systemd/system/{{ service_name }}.service"
+    mode: '0644'
+  notify:
+    - Reload systemd daemon
+    - Restart webapp
+
+- name: Ensure web application service is enabled and started
+  ansible.builtin.service:
+    name: "{{ service_name }}"
+    state: started
+    enabled: true
+  ignore_errors: true

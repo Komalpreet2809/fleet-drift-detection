@@ -1,0 +1,12 @@
+---
+# Configuration for Web Application Nodes
+app_name: "devops-portal"
+app_port: 5000
+app_user: "apprunner"
+app_directory: "/opt/devops-webapp"
+python_packages:
+  - flask
+  - gunicorn
+  - requests
+service_name: "devops-webapp"
+max_workers: 3

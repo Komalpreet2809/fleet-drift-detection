@@ -1,0 +1,27 @@
+---
+# Common baseline configuration for all servers (OS packages, log dir, utilities)
+
+- name: Update apt cache (Ubuntu/Debian)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  ignore_errors: true
+
+- name: Install common essential packages
+  ansible.builtin.package:
+    name:
+      - curl
+      - wget
+      - git
+      - python3
+      - python3-pip
+      - htop
+    state: present
+  ignore_errors: true
+
+- name: Ensure centralized logging directory exists
+  ansible.builtin.file:
+    path: "{{ log_directory }}"
+    state: directory
+    mode: '0755'

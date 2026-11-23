@@ -1,0 +1,6 @@
+---
+# Global variables across all inventory hosts
+project_title: "INT333 Automated DevOps Infrastructure"
+deploy_environment: "development"
+maintenance_contact: "devops-admin@university.edu"
+log_directory: "/var/log/devops_project"

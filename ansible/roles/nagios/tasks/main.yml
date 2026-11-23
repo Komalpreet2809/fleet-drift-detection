@@ -1,0 +1,47 @@
+---
+# Tasks for Nagios Monitoring Configuration (INT333 Unit III Requirements)
+
+- name: Create Nagios configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ nagios_config_dir }}"
+    - "{{ nagios_config_dir }}/objects"
+    - "{{ nagios_plugins_dir }}"
+
+- name: Deploy Nagios commands configuration
+  ansible.builtin.copy:
+    src: commands.cfg
+    dest: "{{ nagios_config_dir }}/objects/commands.cfg"
+    mode: '0644'
+  notify: Restart nagios
+
+- name: Deploy dynamic Hosts configuration from Jinja2 template
+  ansible.builtin.template:
+    src: hosts.cfg.j2
+    dest: "{{ nagios_config_dir }}/objects/hosts.cfg"
+    mode: '0644'
+  notify: Restart nagios
+
+- name: Deploy dynamic Services configuration from Jinja2 template
+  ansible.builtin.template:
+    src: services.cfg.j2
+    dest: "{{ nagios_config_dir }}/objects/services.cfg"
+    mode: '0644'
+  notify: Restart nagios
+
+- name: Install custom Nagios Python health check plugin
+  ansible.builtin.copy:
+    src: plugins/check_webapp_health.py
+    dest: "{{ nagios_plugins_dir }}/check_webapp_health.py"
+    mode: '0755'
+  notify: Restart nagios
+
+- name: Deploy main nagios.cfg
+  ansible.builtin.template:
+    src: nagios.cfg.j2
+    dest: "{{ nagios_config_dir }}/nagios.cfg"
+    mode: '0644'
+  notify: Restart nagios
