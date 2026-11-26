@@ -1,0 +1,20 @@
+---
+# Full setup: configure every fleet machine, then set up Nagios monitoring.
+#   docker exec control ansible-playbook /opt/drift/ansible/site.yml
+- name: Wait for the fleet machines Terraform created
+  hosts: fleet
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Wait until SSH answers
+      ansible.builtin.wait_for_connection:
+        timeout: 60
+
+- name: Apply the baseline to the fleet
+  ansible.builtin.import_playbook: baseline.yml
+
+- name: Set up drift monitoring
+  hosts: monitoring
+  gather_facts: false
+  roles:
+    - monitoring

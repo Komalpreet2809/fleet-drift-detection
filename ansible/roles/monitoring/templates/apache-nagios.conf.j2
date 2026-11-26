@@ -1,0 +1,21 @@
+# Managed by Ansible - Nagios web UI behind a password.
+ScriptAlias /cgi-bin/nagios4 /usr/lib/cgi-bin/nagios4
+ScriptAlias /nagios4/cgi-bin /usr/lib/cgi-bin/nagios4
+Alias /nagios4/stylesheets /etc/nagios4/stylesheets
+Alias /nagios4 /usr/share/nagios4/htdocs
+
+RedirectMatch ^/$ /nagios4/
+
+<DirectoryMatch (/usr/share/nagios4/htdocs|/usr/lib/cgi-bin/nagios4|/etc/nagios4/stylesheets)>
+    Options FollowSymLinks
+    DirectoryIndex index.php index.html
+    AllowOverride None
+    AuthType Basic
+    AuthName "Fleet Drift Monitoring"
+    AuthUserFile /etc/nagios4/htpasswd.users
+    Require valid-user
+</DirectoryMatch>
+
+<Directory /usr/lib/cgi-bin/nagios4>
+    Options +ExecCGI
+</Directory>

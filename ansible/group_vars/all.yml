@@ -1,0 +1,15 @@
+---
+project_name: "Fleet Configuration Drift Detection"
+
+# Nagios web login (lab only - change for anything real)
+nagios_admin_user: nagiosadmin
+nagios_admin_password: drift123
+
+# true  = Nagios automatically runs Ansible to undo drift when it detects it
+# false = Nagios only alerts; an operator fixes it (./run.ps1 fix <node>)
+# Can also be switched live with ./run.ps1 auto on|off
+auto_remediate: true
+
+# Working folder for the drift checks on the control node
+drift_home: /var/lib/drift
+ansible_project_dir: /opt/drift/ansible

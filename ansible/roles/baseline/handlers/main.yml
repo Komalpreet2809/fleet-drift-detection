@@ -1,0 +1,13 @@
+---
+# Handlers are skipped in check mode so they never show up as "drift".
+- name: Reload nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+  when: not ansible_check_mode
+
+- name: Reload ssh
+  ansible.builtin.service:
+    name: ssh
+    state: reloaded
+  when: not ansible_check_mode

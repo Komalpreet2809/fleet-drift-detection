@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ inventory_hostname }}</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; display: grid; place-items: center; height: 100vh; margin: 0; }
+    .card { background: #1e293b; padding: 32px 40px; border-radius: 12px; border-left: 6px solid #22c55e; }
+    h1 { margin: 0 0 8px; color: #4ade80; }
+    td { padding: 3px 14px 3px 0; }
+    td:first-child { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{ inventory_hostname }} - baseline configuration</h1>
+    <p>This page is deployed by Ansible. If it looks different, the server has drifted.</p>
+    <table>
+{% for key, value in app_settings.items() %}
+      <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+{% endfor %}
+    </table>
+  </div>
+</body>
+</html>

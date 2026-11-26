@@ -1,0 +1,9 @@
+---
+# Applies the baseline to the fleet.
+#   Fix drift:     ansible-playbook baseline.yml [--limit node2]
+#   Detect drift:  ansible-playbook baseline.yml --check --diff   (changes nothing)
+- name: Fleet baseline configuration
+  hosts: fleet
+  gather_facts: false
+  roles:
+    - baseline

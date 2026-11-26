@@ -1,0 +1,164 @@
+---
+# Installs Nagios on the control machine and teaches it to check every fleet
+# machine for configuration drift (and optionally fix it with Ansible).
+
+- name: Install Nagios, monitoring plugins and Apache
+  ansible.builtin.apt:
+    name:
+      - nagios4
+      - monitoring-plugins
+      - apache2
+      - apache2-utils
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# ---------------------------------------------------------------- drift check workspace
+- name: Create drift workspace folders (owned by the nagios user)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: nagios
+    group: nagios
+    mode: "0750"
+  loop:
+    - "{{ drift_home }}"
+    - "{{ drift_home }}/.ssh"
+    - "{{ drift_home }}/reports"
+    - "{{ drift_home }}/tmp"
+
+- name: Give Nagios the SSH key Terraform generated, so its checks can log in to the fleet
+  ansible.builtin.copy:
+    src: /root/.ssh/id_ed25519
+    dest: "{{ drift_home }}/.ssh/id_ed25519"
+    remote_src: true
+    owner: nagios
+    group: nagios
+    mode: "0600"
+
+- name: Create the custom plugin folder
+  ansible.builtin.file:
+    path: /usr/local/lib/nagios/plugins
+    state: directory
+    mode: "0755"
+
+- name: Install the drift check, the remediation handler and the report command
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/usr/local/lib/nagios/plugins/{{ item }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - check_drift.py
+    - remediate_drift.sh
+
+- name: Make 'drift-report' available as a command
+  ansible.builtin.file:
+    src: /usr/local/lib/nagios/plugins/check_drift.py
+    dest: /usr/local/bin/drift-report
+    state: link
+
+- name: Turn automatic remediation on
+  ansible.builtin.copy:
+    dest: "{{ drift_home }}/auto_remediate"
+    content: "enabled\n"
+    owner: nagios
+    group: nagios
+    mode: "0644"
+  when: auto_remediate | bool
+
+- name: Turn automatic remediation off
+  ansible.builtin.file:
+    path: "{{ drift_home }}/auto_remediate"
+    state: absent
+  when: not (auto_remediate | bool)
+
+- name: Create the remediation log
+  ansible.builtin.file:
+    path: "{{ drift_home }}/remediation.log"
+    state: touch
+    owner: nagios
+    group: nagios
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+
+# ---------------------------------------------------------------- Nagios configuration
+- name: Nagios settings (external commands, event handlers, timeouts)
+  ansible.builtin.lineinfile:
+    path: /etc/nagios4/nagios.cfg
+    regexp: "^#?{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+  loop:
+    - { key: check_external_commands, value: 1 }
+    - { key: enable_event_handlers, value: 1 }
+    - { key: enable_notifications, value: 0 }
+    - { key: service_check_timeout, value: 90 }
+    - { key: event_handler_timeout, value: 120 }
+  notify: Restart nagios
+
+- name: Replace the Ubuntu sample 'localhost' checks with our own control-node checks
+  ansible.builtin.lineinfile:
+    path: /etc/nagios4/nagios.cfg
+    regexp: "^#?cfg_file=/etc/nagios4/objects/localhost.cfg"
+    line: "#cfg_file=/etc/nagios4/objects/localhost.cfg"
+  notify: Restart nagios
+
+- name: Nagios hosts and services for the fleet
+  ansible.builtin.template:
+    src: fleet.cfg.j2
+    dest: /etc/nagios4/conf.d/fleet.cfg
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart nagios
+
+- name: Validate the Nagios configuration
+  ansible.builtin.command: nagios4 -v /etc/nagios4/nagios.cfg
+  changed_when: false
+
+# ---------------------------------------------------------------- web UI
+- name: Create the Nagios web login
+  ansible.builtin.shell: |
+    if htpasswd -vb /etc/nagios4/htpasswd.users {{ nagios_admin_user }} {{ nagios_admin_password }} 2>/dev/null; then
+      echo unchanged
+    else
+      htpasswd -bc /etc/nagios4/htpasswd.users {{ nagios_admin_user }} {{ nagios_admin_password }}
+    fi
+  register: htpasswd_result
+  changed_when: "'unchanged' not in htpasswd_result.stdout"
+  no_log: true
+
+- name: Apache site for Nagios (password protected)
+  ansible.builtin.template:
+    src: apache-nagios.conf.j2
+    dest: /etc/apache2/conf-available/nagios-drift.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart apache
+
+- name: Enable Apache modules and the Nagios site
+  # Plain mod_cgi (not cgid): cgid needs a socket daemon that can fail after a reboot.
+  ansible.builtin.shell: |
+    before=$(ls /etc/apache2/mods-enabled /etc/apache2/conf-enabled | md5sum)
+    a2dismod -q cgid || true
+    a2enmod -q cgi auth_basic authn_file authz_user alias
+    a2disconf -q nagios4-cgi || true
+    a2enconf -q nagios-drift
+    after=$(ls /etc/apache2/mods-enabled /etc/apache2/conf-enabled | md5sum)
+    [ "$before" = "$after" ] || echo CHANGED
+  register: a2_result
+  changed_when: "'CHANGED' in a2_result.stdout"
+  notify: Restart apache
+
+- name: Start Apache
+  ansible.builtin.service:
+    name: apache2
+    state: started
+
+- name: Start Nagios
+  ansible.builtin.service:
+    name: nagios4
+    state: started

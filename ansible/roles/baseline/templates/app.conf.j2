@@ -1,0 +1,5 @@
+# /etc/fleet/app.conf - managed by Ansible. Do not edit on the server.
+# Source of truth: ansible/group_vars/fleet.yml
+{% for key, value in app_settings.items() %}
+{{ key }} = {{ value }}
+{% endfor %}

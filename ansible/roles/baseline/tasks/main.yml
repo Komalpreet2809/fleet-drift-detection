@@ -1,0 +1,99 @@
+---
+# Each task below is one baseline rule.
+# Normal run  -> Ansible makes the machine match the rule.
+# --check run -> Ansible only REPORTS rules the machine no longer matches (= drift).
+# Task names are shown in Nagios, so they describe the rule in plain words.
+
+- name: "Packages: nginx and curl installed"
+  ansible.builtin.apt:
+    name: "{{ required_packages }}"
+    state: present
+    update_cache: "{{ not ansible_check_mode }}"
+    cache_valid_time: 2592000   # refresh the package list at most every 30 days, so 'fix' stays fast and works offline
+
+- name: "Packages: insecure tools (telnet, netcat) not installed"
+  ansible.builtin.apt:
+    name: "{{ forbidden_packages }}"
+    state: absent
+    purge: true
+
+- name: "User: service account exists"
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    shell: "{{ item.shell }}"
+    groups: "{{ item.groups }}"
+    append: true
+  loop: "{{ service_accounts }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: "Folder: /etc/fleet"
+  ansible.builtin.file:
+    path: /etc/fleet
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "App config: /etc/fleet/app.conf"
+  ansible.builtin.template:
+    src: app.conf.j2
+    dest: /etc/fleet/app.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: "Web server config: /etc/nginx/sites-available/default"
+  ansible.builtin.template:
+    src: nginx-site.conf.j2
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: "Website: {{ web_root }}/index.html"
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ web_root }}/index.html"
+    owner: root
+    group: www-data
+    mode: "0644"
+
+- name: "Security: SSH hardening (/etc/ssh/sshd_config.d/10-baseline.conf)"
+  ansible.builtin.template:
+    src: sshd-baseline.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-baseline.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload ssh
+
+- name: "Permissions: config files owned by root and not writable by others"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: file
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - /etc/fleet/app.conf
+    - /etc/nginx/sites-available/default
+    - /etc/ssh/sshd_config.d/10-baseline.conf
+
+- name: "Login banner: /etc/motd"
+  ansible.builtin.copy:
+    dest: /etc/motd
+    content: |
+      ****************************************************************
+       {{ inventory_hostname }} is managed by Ansible.
+       Manual changes are detected by Nagios and will be reverted.
+      ****************************************************************
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: "Service: nginx running"
+  ansible.builtin.service:
+    name: nginx
+    state: started

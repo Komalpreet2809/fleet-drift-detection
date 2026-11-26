@@ -1,198 +1,144 @@
-# ==============================================================================
-# INT333: DevOps Advance Configuration Management
-# Terraform Infrastructure Configuration
-# Integrates with Ansible by dynamically generating the inventory file.
-# ==============================================================================
+# Infrastructure for the Configuration Drift Detection lab:
+#   - a private network
+#   - N fleet machines (node1..nodeN) that must all stay identically configured
+#   - 1 control machine that runs Ansible + Nagios
+#   - an SSH key pair so Ansible can log in to the fleet
+#   - the Ansible inventory, generated from what was actually created
 
-terraform {
-  required_version = ">= 1.0.0"
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.4.0"
-    }
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
+locals {
+  node_names = [for i in range(var.node_count) : "node${i + 1}"]
+  # .10 = control, .11, .12, ... = fleet nodes
+  control_ip = cidrhost(var.subnet, 10)
+  node_ips   = { for i, name in local.node_names : name => cidrhost(var.subnet, 11 + i) }
+
+  ansible_dir = abspath("${path.module}/../ansible")
+}
+
+# ---------------------------------------------------------------- SSH access
+resource "tls_private_key" "ansible" {
+  algorithm = "ED25519"
+}
+
+# ---------------------------------------------------------------- network
+resource "docker_network" "lab" {
+  name = "${var.project}-net"
+
+  ipam_config {
+    subnet  = var.subnet
+    gateway = cidrhost(var.subnet, 1) # stated explicitly so Docker's default doesn't show up as drift
   }
 }
 
-# Provider configuration for AWS
-provider "aws" {
-  region = var.aws_region
-}
+# ---------------------------------------------------------------- machine images
+resource "docker_image" "node" {
+  name         = "${var.project}-node:latest"
+  keep_locally = true
 
-# --- Network: VPC & Subnet ---
-resource "aws_vpc" "devops_vpc" {
-  count                = var.enable_aws ? 1 : 0
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
-  enable_dns_hostnames = true
+  build {
+    context = "${path.module}/images/node"
+  }
 
-  tags = {
-    Name        = "${var.project_name}-vpc"
-    Environment = var.environment
-    Course      = "INT333"
+  triggers = {
+    source = sha1(join("", [for f in fileset("${path.module}/images/node", "*") : filesha1("${path.module}/images/node/${f}")]))
   }
 }
 
-resource "aws_internet_gateway" "devops_igw" {
-  count  = var.enable_aws ? 1 : 0
-  vpc_id = aws_vpc.devops_vpc[0].id
+resource "docker_image" "control" {
+  name         = "${var.project}-control:latest"
+  keep_locally = true
 
-  tags = {
-    Name = "${var.project_name}-igw"
+  build {
+    context = "${path.module}/images/control"
+  }
+
+  triggers = {
+    source = sha1(join("", [for f in fileset("${path.module}/images/control", "*") : filesha1("${path.module}/images/control/${f}")]))
   }
 }
 
-resource "aws_subnet" "public_subnet" {
-  count                   = var.enable_aws ? 1 : 0
-  vpc_id                  = aws_vpc.devops_vpc[0].id
-  cidr_block              = var.subnet_cidr
-  map_public_ip_on_launch = true
-  availability_zone       = "${var.aws_region}a"
+# ---------------------------------------------------------------- fleet machines
+resource "docker_container" "node" {
+  for_each = local.node_ips
 
-  tags = {
-    Name = "${var.project_name}-public-subnet"
+  name     = each.key
+  hostname = each.key
+  image    = docker_image.node.image_id
+  init     = true
+  restart  = "unless-stopped"
+
+  env = ["SSH_PUBLIC_KEY=${trimspace(tls_private_key.ansible.public_key_openssh)}"]
+
+  networks_advanced {
+    name         = docker_network.lab.id
+    ipv4_address = each.value
+  }
+
+  # Each node's website, so you can see the effect of drift in a browser
+  ports {
+    internal = 80
+    external = var.node_web_port_start + index(local.node_names, each.key)
+  }
+
+  labels {
+    label = "project"
+    value = var.project
+  }
+  labels {
+    label = "role"
+    value = "fleet"
   }
 }
 
-resource "aws_route_table" "public_rt" {
-  count  = var.enable_aws ? 1 : 0
-  vpc_id = aws_vpc.devops_vpc[0].id
+# ---------------------------------------------------------------- control machine
+resource "docker_container" "control" {
+  name     = "control"
+  hostname = "control"
+  image    = docker_image.control.image_id
+  init     = true
+  restart  = "unless-stopped"
 
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.devops_igw[0].id
+  env = ["ANSIBLE_CONFIG=/opt/drift/ansible/ansible.cfg"]
+
+  networks_advanced {
+    name         = docker_network.lab.id
+    ipv4_address = local.control_ip
   }
 
-  tags = {
-    Name = "${var.project_name}-public-rt"
+  ports {
+    internal = 80
+    external = var.nagios_port
   }
+
+  # The Ansible project (the "desired state") is shared read-only from this repository
+  volumes {
+    host_path      = local.ansible_dir
+    container_path = "/opt/drift/ansible"
+    read_only      = true
+  }
+
+  upload {
+    content = tls_private_key.ansible.private_key_openssh
+    file    = "/opt/drift/keys/id_ed25519"
+  }
+
+  labels {
+    label = "project"
+    value = var.project
+  }
+  labels {
+    label = "role"
+    value = "control"
+  }
+
+  depends_on = [docker_container.node]
 }
 
-resource "aws_route_table_association" "public_assoc" {
-  count          = var.enable_aws ? 1 : 0
-  subnet_id      = aws_subnet.public_subnet[0].id
-  route_table_id = aws_route_table.public_rt[0].id
-}
-
-# --- Security Groups ---
-resource "aws_security_group" "web_sg" {
-  count       = var.enable_aws ? 1 : 0
-  name        = "${var.project_name}-web-sg"
-  description = "Security group for Web Server (HTTP, SSH, App port)"
-  vpc_id      = aws_vpc.devops_vpc[0].id
-
-  ingress {
-    description = "SSH from anywhere"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "HTTP Traffic"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "App Port (Flask / Web API)"
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-web-sg"
-  }
-}
-
-resource "aws_security_group" "nagios_sg" {
-  count       = var.enable_aws ? 1 : 0
-  name        = "${var.project_name}-nagios-sg"
-  description = "Security group for Nagios Monitoring Server"
-  vpc_id      = aws_vpc.devops_vpc[0].id
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "Nagios Web UI"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-nagios-sg"
-  }
-}
-
-# --- EC2 Compute Instances ---
-resource "aws_instance" "web_server" {
-  count                  = var.enable_aws ? 1 : 0
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public_subnet[0].id
-  vpc_security_group_ids = [aws_security_group.web_sg[0].id]
-  key_name               = var.key_pair_name
-
-  tags = {
-    Name = "${var.project_name}-web-server"
-    Role = "webserver"
-  }
-}
-
-resource "aws_instance" "nagios_server" {
-  count                  = var.enable_aws ? 1 : 0
-  ami                    = var.ami_id
-  instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public_subnet[0].id
-  vpc_security_group_ids = [aws_security_group.nagios_sg[0].id]
-  key_name               = var.key_pair_name
-
-  tags = {
-    Name = "${var.project_name}-nagios-server"
-    Role = "monitoring"
-  }
-}
-
-# ==============================================================================
-# Dynamic Integration: Generate Ansible Inventory
-# Automatically populates IPs provisioned by Terraform into Ansible hosts.ini
-# ==============================================================================
-resource "local_file" "ansible_inventory" {
-  filename = "${path.module}/../ansible/inventory/hosts.ini"
-  content  = templatefile("${path.module}/inventory.tpl", {
-    web_ip    = var.enable_aws ? (length(aws_instance.web_server) > 0 ? aws_instance.web_server[0].public_ip : "127.0.0.1") : var.simulated_web_ip
-    nagios_ip = var.enable_aws ? (length(aws_instance.nagios_server) > 0 ? aws_instance.nagios_server[0].public_ip : "127.0.0.1") : var.simulated_nagios_ip
-    ssh_user  = var.ssh_user
+# ---------------------------------------------------------------- Ansible inventory
+resource "local_file" "inventory" {
+  filename        = "${local.ansible_dir}/inventory/hosts.ini"
+  file_permission = "0644"
+  content = templatefile("${path.module}/inventory.tftpl", {
+    nodes      = local.node_ips
+    control_ip = local.control_ip
   })
 }

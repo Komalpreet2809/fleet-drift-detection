@@ -1,0 +1,36 @@
+---
+# ============================================================================
+# THE BASELINE - the one "correct" configuration every fleet machine must have.
+# Change something here and re-run baseline.yml to roll it out to all nodes.
+# Anything on a node that differs from this is configuration drift.
+# ============================================================================
+
+# Application settings written to /etc/fleet/app.conf
+app_settings:
+  environment: production
+  max_connections: 100
+  log_level: info
+  payment_gateway: enabled
+  debug_mode: "off"
+
+required_packages:
+  - nginx
+  - curl
+
+# Insecure software that must never be installed
+forbidden_packages:
+  - telnet
+  - inetutils-telnet
+  - netcat-openbsd
+
+# Service accounts every node must have
+service_accounts:
+  - name: deploy
+    shell: /bin/bash
+    groups: www-data
+
+# SSH hardening
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+
+web_root: /var/www/html

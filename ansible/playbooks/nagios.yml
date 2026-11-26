@@ -1,6 +1,0 @@
----
-# Standalone Nagios Setup Playbook
-- name: Deploy and Configure Nagios Monitoring
-  hosts: monitoring
-  roles:
-    - role: nagios

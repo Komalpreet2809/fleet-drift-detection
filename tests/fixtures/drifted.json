@@ -1,0 +1,802 @@
+{
+    "custom_stats": {},
+    "global_custom_stats": {},
+    "plays": [
+        {
+            "play": {
+                "duration": {
+                    "end": "2026-11-24T09:53:55.020174Z",
+                    "start": "2026-11-24T09:53:47.810661Z"
+                },
+                "id": "f12fe270-1e2e-76de-2209-000000000005",
+                "name": "Fleet baseline configuration",
+                "path": "/opt/drift/ansible/baseline.yml:5"
+            },
+            "tasks": [
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.apt",
+                            "cache_update_time": 1795510805,
+                            "cache_updated": false,
+                            "changed": false,
+                            "invocation": {
+                                "module_args": {
+                                    "allow_change_held_packages": false,
+                                    "allow_downgrade": false,
+                                    "allow_unauthenticated": false,
+                                    "autoclean": false,
+                                    "autoremove": false,
+                                    "cache_valid_time": 86400,
+                                    "clean": false,
+                                    "deb": null,
+                                    "default_release": null,
+                                    "dpkg_options": "force-confdef,force-confold",
+                                    "fail_on_autoremove": false,
+                                    "force": false,
+                                    "force_apt_get": false,
+                                    "install_recommends": null,
+                                    "lock_timeout": 60,
+                                    "name": [
+                                        "nginx",
+                                        "curl"
+                                    ],
+                                    "only_upgrade": false,
+                                    "package": [
+                                        "nginx",
+                                        "curl"
+                                    ],
+                                    "policy_rc_d": null,
+                                    "purge": false,
+                                    "state": "present",
+                                    "update_cache": false,
+                                    "update_cache_retries": 5,
+                                    "update_cache_retry_max_delay": 12,
+                                    "upgrade": null
+                                }
+                            }
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:49.002925Z",
+                            "start": "2026-11-24T09:53:47.895276Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-00000000000a",
+                        "name": "baseline : Packages: nginx and curl installed",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:7"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.apt",
+                            "changed": true,
+                            "diff": {
+                                "prepared": "The following packages will be REMOVED:\n  inetutils-telnet* telnet*\n0 upgraded, 0 newly installed, 2 to remove and 4 not upgraded."
+                            },
+                            "invocation": {
+                                "module_args": {
+                                    "allow_change_held_packages": false,
+                                    "allow_downgrade": false,
+                                    "allow_unauthenticated": false,
+                                    "autoclean": false,
+                                    "autoremove": false,
+                                    "cache_valid_time": 0,
+                                    "clean": false,
+                                    "deb": null,
+                                    "default_release": null,
+                                    "dpkg_options": "force-confdef,force-confold",
+                                    "fail_on_autoremove": false,
+                                    "force": false,
+                                    "force_apt_get": false,
+                                    "install_recommends": null,
+                                    "lock_timeout": 60,
+                                    "name": [
+                                        "telnet",
+                                        "inetutils-telnet",
+                                        "netcat-openbsd"
+                                    ],
+                                    "only_upgrade": false,
+                                    "package": [
+                                        "telnet",
+                                        "inetutils-telnet",
+                                        "netcat-openbsd"
+                                    ],
+                                    "policy_rc_d": null,
+                                    "purge": true,
+                                    "state": "absent",
+                                    "update_cache": null,
+                                    "update_cache_retries": 5,
+                                    "update_cache_retry_max_delay": 12,
+                                    "upgrade": null
+                                }
+                            },
+                            "stderr": "",
+                            "stderr_lines": [],
+                            "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following packages will be REMOVED:\n  inetutils-telnet* telnet*\n0 upgraded, 0 newly installed, 2 to remove and 4 not upgraded.\nPurg telnet [0.17+2.5-3ubuntu4.2]\nPurg inetutils-telnet [2:2.5-3ubuntu4.2]\n",
+                            "stdout_lines": [
+                                "Reading package lists...",
+                                "Building dependency tree...",
+                                "Reading state information...",
+                                "The following packages will be REMOVED:",
+                                "  inetutils-telnet* telnet*",
+                                "0 upgraded, 0 newly installed, 2 to remove and 4 not upgraded.",
+                                "Purg telnet [0.17+2.5-3ubuntu4.2]",
+                                "Purg inetutils-telnet [2:2.5-3ubuntu4.2]"
+                            ]
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:51.376905Z",
+                            "start": "2026-11-24T09:53:49.023613Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-00000000000b",
+                        "name": "baseline : Packages: insecure tools (telnet, netcat) not installed",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:14"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "action": "ansible.builtin.user",
+                            "changed": true,
+                            "msg": "All items completed",
+                            "results": [
+                                {
+                                    "_ansible_item_label": "deploy",
+                                    "_ansible_no_log": false,
+                                    "ansible_loop_var": "item",
+                                    "changed": true,
+                                    "failed": false,
+                                    "invocation": {
+                                        "module_args": {
+                                            "append": true,
+                                            "authorization": null,
+                                            "comment": null,
+                                            "create_home": true,
+                                            "expires": null,
+                                            "force": false,
+                                            "generate_ssh_key": null,
+                                            "group": null,
+                                            "groups": [
+                                                "www-data"
+                                            ],
+                                            "hidden": null,
+                                            "home": null,
+                                            "local": null,
+                                            "login_class": null,
+                                            "move_home": false,
+                                            "name": "deploy",
+                                            "non_unique": false,
+                                            "password": null,
+                                            "password_expire_max": null,
+                                            "password_expire_min": null,
+                                            "password_expire_warn": null,
+                                            "password_lock": null,
+                                            "profile": null,
+                                            "remove": false,
+                                            "role": null,
+                                            "seuser": null,
+                                            "shell": "/bin/bash",
+                                            "skeleton": null,
+                                            "ssh_key_bits": 0,
+                                            "ssh_key_comment": "ansible-generated on node2",
+                                            "ssh_key_file": null,
+                                            "ssh_key_passphrase": null,
+                                            "ssh_key_type": "rsa",
+                                            "state": "present",
+                                            "system": false,
+                                            "uid": null,
+                                            "umask": null,
+                                            "update_password": "always"
+                                        }
+                                    },
+                                    "item": {
+                                        "groups": "www-data",
+                                        "name": "deploy",
+                                        "shell": "/bin/bash"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:51.660331Z",
+                            "start": "2026-11-24T09:53:51.412510Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-00000000000c",
+                        "name": "baseline : User: service account exists",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:20"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.file",
+                            "changed": false,
+                            "diff": {
+                                "after": {
+                                    "path": "/etc/fleet"
+                                },
+                                "before": {
+                                    "path": "/etc/fleet"
+                                }
+                            },
+                            "gid": 0,
+                            "group": "root",
+                            "invocation": {
+                                "module_args": {
+                                    "_diff_peek": null,
+                                    "_original_basename": null,
+                                    "access_time": null,
+                                    "access_time_format": "%Y%m%d%H%M.%S",
+                                    "attributes": null,
+                                    "follow": true,
+                                    "force": false,
+                                    "group": "root",
+                                    "mode": "0755",
+                                    "modification_time": null,
+                                    "modification_time_format": "%Y%m%d%H%M.%S",
+                                    "owner": "root",
+                                    "path": "/etc/fleet",
+                                    "recurse": false,
+                                    "selevel": null,
+                                    "serole": null,
+                                    "setype": null,
+                                    "seuser": null,
+                                    "src": null,
+                                    "state": "directory",
+                                    "unsafe_writes": false
+                                }
+                            },
+                            "mode": "0755",
+                            "owner": "root",
+                            "path": "/etc/fleet",
+                            "size": 4096,
+                            "state": "directory",
+                            "uid": 0
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:51.924344Z",
+                            "start": "2026-11-24T09:53:51.703038Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-00000000000e",
+                        "name": "baseline : Folder: /etc/fleet",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:30"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.template",
+                            "changed": true,
+                            "diff": [
+                                {
+                                    "after": "# /etc/fleet/app.conf - managed by Ansible. Do not edit on the server.\n# Source of truth: ansible/group_vars/fleet.yml\nenvironment = production\nmax_connections = 100\nlog_level = info\npayment_gateway = enabled\ndebug_mode = off\n",
+                                    "after_header": "/root/.ansible/tmp/ansible-local-25119mc2hxn7n/tmpocdhog5b/app.conf.j2",
+                                    "before": "# /etc/fleet/app.conf - managed by Ansible. Do not edit on the server.\n# Source of truth: ansible/group_vars/fleet.yml\nenvironment = production\nmax_connections = 100\nlog_level = debug\npayment_gateway = enabled\ndebug_mode = off\n",
+                                    "before_header": "/etc/fleet/app.conf"
+                                }
+                            ],
+                            "invocation": {
+                                "dest": "/etc/fleet/app.conf",
+                                "follow": false,
+                                "group": "root",
+                                "mode": "0644",
+                                "module_args": {
+                                    "dest": "/etc/fleet/app.conf",
+                                    "follow": false,
+                                    "group": "root",
+                                    "mode": "0644",
+                                    "owner": "root",
+                                    "src": "/root/.ansible/tmp/ansible-local-25119mc2hxn7n/tmpocdhog5b/app.conf.j2"
+                                },
+                                "owner": "root",
+                                "src": "/root/.ansible/tmp/ansible-local-25119mc2hxn7n/tmpocdhog5b/app.conf.j2"
+                            }
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:52.509943Z",
+                            "start": "2026-11-24T09:53:51.943276Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-00000000000f",
+                        "name": "baseline : App config: /etc/fleet/app.conf",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:38"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.template",
+                            "changed": true,
+                            "checksum": "06fe4d3c079748c2bc75993ce8f527d9f589e6ad",
+                            "dest": "/etc/nginx/sites-available/default",
+                            "diff": {
+                                "after": {
+                                    "mode": "0644",
+                                    "path": "/etc/nginx/sites-available/default"
+                                },
+                                "before": {
+                                    "mode": "0666",
+                                    "path": "/etc/nginx/sites-available/default"
+                                }
+                            },
+                            "gid": 0,
+                            "group": "root",
+                            "invocation": {
+                                "module_args": {
+                                    "_diff_peek": null,
+                                    "_original_basename": "nginx-site.conf.j2",
+                                    "access_time": null,
+                                    "access_time_format": "%Y%m%d%H%M.%S",
+                                    "attributes": null,
+                                    "dest": "/etc/nginx/sites-available/default",
+                                    "follow": true,
+                                    "force": false,
+                                    "group": "root",
+                                    "mode": "0644",
+                                    "modification_time": null,
+                                    "modification_time_format": "%Y%m%d%H%M.%S",
+                                    "owner": "root",
+                                    "path": "/etc/nginx/sites-available/default",
+                                    "recurse": false,
+                                    "selevel": null,
+                                    "serole": null,
+                                    "setype": null,
+                                    "seuser": null,
+                                    "src": null,
+                                    "state": "file",
+                                    "unsafe_writes": false
+                                }
+                            },
+                            "mode": "0666",
+                            "owner": "root",
+                            "path": "/etc/nginx/sites-available/default",
+                            "size": 360,
+                            "state": "file",
+                            "uid": 0
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:52.873238Z",
+                            "start": "2026-11-24T09:53:52.529247Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000010",
+                        "name": "baseline : Web server config: /etc/nginx/sites-available/default",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:46"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.template",
+                            "changed": false,
+                            "checksum": "6d8c7cd64f563911c68c11d2bad8f71234a79666",
+                            "dest": "/var/www/html/index.html",
+                            "diff": {
+                                "after": {
+                                    "path": "/var/www/html/index.html"
+                                },
+                                "before": {
+                                    "path": "/var/www/html/index.html"
+                                }
+                            },
+                            "gid": 33,
+                            "group": "www-data",
+                            "invocation": {
+                                "module_args": {
+                                    "_diff_peek": null,
+                                    "_original_basename": "index.html.j2",
+                                    "access_time": null,
+                                    "access_time_format": "%Y%m%d%H%M.%S",
+                                    "attributes": null,
+                                    "dest": "/var/www/html/index.html",
+                                    "follow": true,
+                                    "force": false,
+                                    "group": "www-data",
+                                    "mode": "0644",
+                                    "modification_time": null,
+                                    "modification_time_format": "%Y%m%d%H%M.%S",
+                                    "owner": "root",
+                                    "path": "/var/www/html/index.html",
+                                    "recurse": false,
+                                    "selevel": null,
+                                    "serole": null,
+                                    "setype": null,
+                                    "seuser": null,
+                                    "src": null,
+                                    "state": "file",
+                                    "unsafe_writes": false
+                                }
+                            },
+                            "mode": "0644",
+                            "owner": "root",
+                            "path": "/var/www/html/index.html",
+                            "size": 964,
+                            "state": "file",
+                            "uid": 0
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:53.211697Z",
+                            "start": "2026-11-24T09:53:52.896938Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000011",
+                        "name": "baseline : Website: /var/www/html/index.html",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:55"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.template",
+                            "changed": false,
+                            "checksum": "fac9047a959f55170b1e69f8b773602f69625c1b",
+                            "dest": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                            "diff": {
+                                "after": {
+                                    "path": "/etc/ssh/sshd_config.d/10-baseline.conf"
+                                },
+                                "before": {
+                                    "path": "/etc/ssh/sshd_config.d/10-baseline.conf"
+                                }
+                            },
+                            "gid": 0,
+                            "group": "root",
+                            "invocation": {
+                                "module_args": {
+                                    "_diff_peek": null,
+                                    "_original_basename": "sshd-baseline.conf.j2",
+                                    "access_time": null,
+                                    "access_time_format": "%Y%m%d%H%M.%S",
+                                    "attributes": null,
+                                    "dest": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                                    "follow": true,
+                                    "force": false,
+                                    "group": "root",
+                                    "mode": "0644",
+                                    "modification_time": null,
+                                    "modification_time_format": "%Y%m%d%H%M.%S",
+                                    "owner": "root",
+                                    "path": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                                    "recurse": false,
+                                    "selevel": null,
+                                    "serole": null,
+                                    "setype": null,
+                                    "seuser": null,
+                                    "src": null,
+                                    "state": "file",
+                                    "unsafe_writes": false
+                                }
+                            },
+                            "mode": "0644",
+                            "owner": "root",
+                            "path": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                            "size": 126,
+                            "state": "file",
+                            "uid": 0
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:53.594139Z",
+                            "start": "2026-11-24T09:53:53.243401Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000012",
+                        "name": "baseline : Security: SSH hardening (/etc/ssh/sshd_config.d/10-baseline.conf)",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:63"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "action": "ansible.builtin.file",
+                            "changed": true,
+                            "msg": "All items completed",
+                            "results": [
+                                {
+                                    "_ansible_item_label": "/etc/fleet/app.conf",
+                                    "_ansible_no_log": false,
+                                    "ansible_loop_var": "item",
+                                    "changed": false,
+                                    "diff": {
+                                        "after": {
+                                            "path": "/etc/fleet/app.conf"
+                                        },
+                                        "before": {
+                                            "path": "/etc/fleet/app.conf"
+                                        }
+                                    },
+                                    "failed": false,
+                                    "gid": 0,
+                                    "group": "root",
+                                    "invocation": {
+                                        "module_args": {
+                                            "_diff_peek": null,
+                                            "_original_basename": null,
+                                            "access_time": null,
+                                            "access_time_format": "%Y%m%d%H%M.%S",
+                                            "attributes": null,
+                                            "follow": true,
+                                            "force": false,
+                                            "group": "root",
+                                            "mode": "0644",
+                                            "modification_time": null,
+                                            "modification_time_format": "%Y%m%d%H%M.%S",
+                                            "owner": "root",
+                                            "path": "/etc/fleet/app.conf",
+                                            "recurse": false,
+                                            "selevel": null,
+                                            "serole": null,
+                                            "setype": null,
+                                            "seuser": null,
+                                            "src": null,
+                                            "state": "file",
+                                            "unsafe_writes": false
+                                        }
+                                    },
+                                    "item": "/etc/fleet/app.conf",
+                                    "mode": "0644",
+                                    "owner": "root",
+                                    "path": "/etc/fleet/app.conf",
+                                    "size": 227,
+                                    "state": "file",
+                                    "uid": 0
+                                },
+                                {
+                                    "_ansible_item_label": "/etc/nginx/sites-available/default",
+                                    "_ansible_no_log": false,
+                                    "ansible_loop_var": "item",
+                                    "changed": true,
+                                    "diff": {
+                                        "after": {
+                                            "mode": "0644",
+                                            "path": "/etc/nginx/sites-available/default"
+                                        },
+                                        "before": {
+                                            "mode": "0666",
+                                            "path": "/etc/nginx/sites-available/default"
+                                        }
+                                    },
+                                    "failed": false,
+                                    "gid": 0,
+                                    "group": "root",
+                                    "invocation": {
+                                        "module_args": {
+                                            "_diff_peek": null,
+                                            "_original_basename": null,
+                                            "access_time": null,
+                                            "access_time_format": "%Y%m%d%H%M.%S",
+                                            "attributes": null,
+                                            "follow": true,
+                                            "force": false,
+                                            "group": "root",
+                                            "mode": "0644",
+                                            "modification_time": null,
+                                            "modification_time_format": "%Y%m%d%H%M.%S",
+                                            "owner": "root",
+                                            "path": "/etc/nginx/sites-available/default",
+                                            "recurse": false,
+                                            "selevel": null,
+                                            "serole": null,
+                                            "setype": null,
+                                            "seuser": null,
+                                            "src": null,
+                                            "state": "file",
+                                            "unsafe_writes": false
+                                        }
+                                    },
+                                    "item": "/etc/nginx/sites-available/default",
+                                    "mode": "0666",
+                                    "owner": "root",
+                                    "path": "/etc/nginx/sites-available/default",
+                                    "size": 360,
+                                    "state": "file",
+                                    "uid": 0
+                                },
+                                {
+                                    "_ansible_item_label": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                                    "_ansible_no_log": false,
+                                    "ansible_loop_var": "item",
+                                    "changed": false,
+                                    "diff": {
+                                        "after": {
+                                            "path": "/etc/ssh/sshd_config.d/10-baseline.conf"
+                                        },
+                                        "before": {
+                                            "path": "/etc/ssh/sshd_config.d/10-baseline.conf"
+                                        }
+                                    },
+                                    "failed": false,
+                                    "gid": 0,
+                                    "group": "root",
+                                    "invocation": {
+                                        "module_args": {
+                                            "_diff_peek": null,
+                                            "_original_basename": null,
+                                            "access_time": null,
+                                            "access_time_format": "%Y%m%d%H%M.%S",
+                                            "attributes": null,
+                                            "follow": true,
+                                            "force": false,
+                                            "group": "root",
+                                            "mode": "0644",
+                                            "modification_time": null,
+                                            "modification_time_format": "%Y%m%d%H%M.%S",
+                                            "owner": "root",
+                                            "path": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                                            "recurse": false,
+                                            "selevel": null,
+                                            "serole": null,
+                                            "setype": null,
+                                            "seuser": null,
+                                            "src": null,
+                                            "state": "file",
+                                            "unsafe_writes": false
+                                        }
+                                    },
+                                    "item": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                                    "mode": "0644",
+                                    "owner": "root",
+                                    "path": "/etc/ssh/sshd_config.d/10-baseline.conf",
+                                    "size": 126,
+                                    "state": "file",
+                                    "uid": 0
+                                }
+                            ]
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:54.041211Z",
+                            "start": "2026-11-24T09:53:53.626447Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000013",
+                        "name": "baseline : Permissions: config files owned by root and not writable by others",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:72"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.copy",
+                            "changed": false,
+                            "checksum": "9ef5f8acfeba67ca6fde09992b517a9c027af140",
+                            "dest": "/etc/motd",
+                            "diff": {
+                                "after": {
+                                    "path": "/etc/motd"
+                                },
+                                "before": {
+                                    "path": "/etc/motd"
+                                }
+                            },
+                            "gid": 0,
+                            "group": "root",
+                            "invocation": {
+                                "module_args": {
+                                    "_diff_peek": null,
+                                    "_original_basename": "tmp4eo5ooxm",
+                                    "access_time": null,
+                                    "access_time_format": "%Y%m%d%H%M.%S",
+                                    "attributes": null,
+                                    "dest": "/etc/motd",
+                                    "follow": true,
+                                    "force": false,
+                                    "group": "root",
+                                    "mode": "0644",
+                                    "modification_time": null,
+                                    "modification_time_format": "%Y%m%d%H%M.%S",
+                                    "owner": "root",
+                                    "path": "/etc/motd",
+                                    "recurse": false,
+                                    "selevel": null,
+                                    "serole": null,
+                                    "setype": null,
+                                    "seuser": null,
+                                    "src": null,
+                                    "state": "file",
+                                    "unsafe_writes": false
+                                }
+                            },
+                            "mode": "0644",
+                            "owner": "root",
+                            "path": "/etc/motd",
+                            "size": 221,
+                            "state": "file",
+                            "uid": 0
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:54.353858Z",
+                            "start": "2026-11-24T09:53:54.058174Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000014",
+                        "name": "baseline : Login banner: /etc/motd",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:84"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.service",
+                            "changed": true,
+                            "invocation": {
+                                "module_args": {
+                                    "arguments": "",
+                                    "enabled": null,
+                                    "name": "nginx",
+                                    "pattern": null,
+                                    "runlevel": "default",
+                                    "sleep": null,
+                                    "state": "started"
+                                }
+                            },
+                            "msg": "service state changed"
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:54.960791Z",
+                            "start": "2026-11-24T09:53:54.371911Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000015",
+                        "name": "baseline : Service: nginx running",
+                        "path": "/opt/drift/ansible/roles/baseline/tasks/main.yml:96"
+                    }
+                },
+                {
+                    "hosts": {
+                        "node2": {
+                            "_ansible_no_log": false,
+                            "action": "ansible.builtin.service",
+                            "changed": false,
+                            "false_condition": "not ansible_check_mode",
+                            "skip_reason": "Conditional result was False",
+                            "skipped": true
+                        }
+                    },
+                    "task": {
+                        "duration": {
+                            "end": "2026-11-24T09:53:55.020174Z",
+                            "start": "2026-11-24T09:53:55.012329Z"
+                        },
+                        "id": "f12fe270-1e2e-76de-2209-000000000017",
+                        "name": "baseline : Reload nginx",
+                        "path": "/opt/drift/ansible/roles/baseline/handlers/main.yml:3"
+                    }
+                }
+            ]
+        }
+    ],
+    "stats": {
+        "node2": {
+            "changed": 6,
+            "failures": 0,
+            "ignored": 0,
+            "ok": 11,
+            "rescued": 0,
+            "skipped": 1,
+            "unreachable": 0
+        }
+    }
+}

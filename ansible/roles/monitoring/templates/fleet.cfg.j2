@@ -1,0 +1,105 @@
+# Managed by Ansible - generated from the inventory Terraform wrote.
+# One host per fleet machine, each with 3 checks:
+#   SSH                  - can we reach the machine?
+#   Website              - is nginx serving the baseline page?
+#   Configuration Drift  - does the machine still match the Ansible baseline?
+
+# ---------------------------------------------------------------- commands
+define command {
+    command_name    drift_check_ssh
+    command_line    $USER1$/check_ssh -H $HOSTADDRESS$
+}
+
+define command {
+    command_name    drift_check_website
+    command_line    $USER1$/check_http -H $HOSTADDRESS$ -u / -s "baseline configuration"
+}
+
+define command {
+    command_name    drift_check_nagios_ui
+    command_line    $USER1$/check_http -H 127.0.0.1 -u /nagios4/ -e "401 Unauthorized"
+}
+
+define command {
+    command_name    check_drift
+    command_line    /usr/local/lib/nagios/plugins/check_drift.py --host $HOSTNAME$
+}
+
+define command {
+    command_name    remediate_drift
+    command_line    /usr/local/lib/nagios/plugins/remediate_drift.sh $SERVICESTATE$ $SERVICESTATETYPE$ $HOSTNAME$
+}
+
+# ---------------------------------------------------------------- control node
+define host {
+    use                     linux-server
+    host_name               control
+    alias                   Control node (Ansible + Nagios)
+    address                 127.0.0.1
+}
+
+define service {
+    use                     generic-service
+    host_name               control
+    service_description     Nagios web UI
+    check_command           drift_check_nagios_ui
+}
+
+define service {
+    use                     generic-service
+    host_name               control
+    service_description     Disk space
+    check_command           check_local_disk!20%!10%!/
+}
+
+# ---------------------------------------------------------------- fleet hosts
+define hostgroup {
+    hostgroup_name  fleet
+    alias           Managed fleet (must match the Ansible baseline)
+}
+
+{% for host in groups['fleet'] %}
+define host {
+    use                     linux-server
+    host_name               {{ host }}
+    alias                   Fleet machine {{ host }}
+    address                 {{ hostvars[host].ansible_host }}
+    hostgroups              fleet
+    check_interval          1
+    retry_interval          1
+    max_check_attempts      2
+}
+
+{% endfor %}
+# ---------------------------------------------------------------- services
+define service {
+    use                     generic-service
+    hostgroup_name          fleet
+    service_description     SSH
+    check_command           drift_check_ssh
+    check_interval          1
+    retry_interval          1
+    max_check_attempts      2
+}
+
+define service {
+    use                     generic-service
+    hostgroup_name          fleet
+    service_description     Website
+    check_command           drift_check_website
+    check_interval          1
+    retry_interval          1
+    max_check_attempts      2
+}
+
+define service {
+    use                     generic-service
+    hostgroup_name          fleet
+    service_description     Configuration Drift
+    check_command           check_drift
+    check_interval          1
+    retry_interval          0.5
+    max_check_attempts      2
+    event_handler           remediate_drift
+    event_handler_enabled   1
+}

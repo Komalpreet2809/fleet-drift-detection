@@ -1,97 +1,165 @@
-# INT333: DevOps Advance Configuration Management
-## End-to-End Infrastructure Automation, Configuration Management & Continuous Monitoring
+# Fleet Configuration Drift Detection
+### INT333 – DevOps Advance Configuration Management · Terraform + Ansible + Nagios
 
-[![Tests](https://img.shields.io/badge/tests-9%20passed%2C%20100%25-brightgreen.svg)]()
-[![Course](https://img.shields.io/badge/Course-INT333-blue.svg)]()
-[![Stack](https://img.shields.io/badge/Stack-Terraform%20%7C%20Ansible%20%7C%20Nagios-orange.svg)]()
-[![Rubric](https://img.shields.io/badge/Rubric%20Score-100%2F100-success.svg)]()
+A small system that keeps several Linux machines configured **identically** and catches
+anyone who changes a machine **by hand**.
+
+- **Terraform** creates the machines (a private network, 3 fleet machines, 1 control machine, SSH keys).
+- **Ansible** defines the one correct configuration (the *baseline*) and applies it to every machine.
+- **Nagios** checks every machine against the baseline once a minute. When a machine differs,
+  it turns red and shows exactly what changed. It can then run Ansible to put it back automatically.
+
+```
+                ┌──────────────────────── Terraform creates everything below ───────────────────────┐
+                │                                                                                    │
+   You / an     │   ┌──────────────── control ─────────────────┐        ┌──────── node1 ────────┐    │
+   admin edits  │   │  Nagios  ── every minute runs ──▶        │  SSH   │ nginx, app.conf,      │    │
+   a file by ───┼──▶│  check_drift.py                          │──────▶ │ users, packages, ...  │    │
+   hand         │   │    └─ ansible-playbook --check --diff    │        └───────────────────────┘    │
+                │   │  drift found? → event handler            │        ┌──────── node2 ────────┐    │
+                │   │    └─ ansible-playbook baseline.yml      │──────▶ │        same           │    │
+                │   │       (puts the machine back)            │        └───────────────────────┘    │
+                │   │  Web UI :8090                            │        ┌──────── node3 ────────┐    │
+                │   └──────────────────────────────────────────┘──────▶ │        same           │    │
+                │                                                       └───────────────────────┘    │
+                └────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+The "machines" are Docker containers that behave like small Ubuntu servers (SSH, packages,
+services), so the whole lab runs free on a laptop. Terraform, Ansible and Nagios treat them
+exactly like real servers.
 
 ---
 
-## 📌 Project Overview
-This project implements an automated, industry-standard DevOps pipeline fulfilling all requirements of the **INT333 Project Rubric**:
-- **Terraform (Unit IV)**: Infrastructure as Code (IaC) provisioning and dynamic Ansible inventory generation.
-- **Ansible (Units V & VI)**: Configuration management, multi-tier web application deployment, and automated self-healing.
-- **Nagios Core (Unit III)**: Continuous health monitoring with built-in checks and a **custom Python inspection plugin** (`check_webapp_health.py`).
+## What counts as drift
+
+The baseline lives in [`ansible/group_vars/fleet.yml`](ansible/group_vars/fleet.yml) and
+[`ansible/roles/baseline/tasks/main.yml`](ansible/roles/baseline/tasks/main.yml). Each task is one rule:
+
+| Rule | Example of drift it catches |
+|---|---|
+| Packages: nginx and curl installed | someone uninstalls nginx |
+| Packages: insecure tools not installed | someone installs `telnet` |
+| User: service account exists | the `deploy` user is deleted |
+| App config: `/etc/fleet/app.conf` | `max_connections` changed from 100 to 9999 |
+| Web server config | nginx config edited |
+| Website: `index.html` | page defaced |
+| Security: SSH hardening | `PermitRootLogin yes` added |
+| Permissions: config files | `chmod 777` on a config file |
+| Login banner: `/etc/motd` | banner edited |
+| Service: nginx running | nginx stopped |
+
+## How detection works
+
+[`check_drift.py`](ansible/roles/monitoring/files/check_drift.py) is a custom Nagios plugin. It runs
+
+```
+ansible-playbook baseline.yml --check --diff --limit <machine>
+```
+
+`--check` makes Ansible **report what it would change without changing anything**. Every rule
+Ansible would change is drift. The plugin turns that into a Nagios result:
+
+```
+DRIFT CRITICAL - node3 has drifted - 2 of 11 rules broken: App config: /etc/fleet/app.conf, Service: nginx running
+[DRIFT] App config: /etc/fleet/app.conf
+      on server: max_connections = 9999
+      baseline:  max_connections = 100
+[DRIFT] Service: nginx running
+    service is not in the required state
+```
+
+| Exit code | Meaning |
+|---|---|
+| 0 OK | machine matches the baseline |
+| 2 CRITICAL | machine has drifted (what + diff shown) |
+| 3 UNKNOWN | the check could not run (machine unreachable, Ansible error) – never reported as OK |
+
+When drift is **confirmed** (Nagios HARD CRITICAL state), the event handler
+[`remediate_drift.sh`](ansible/roles/monitoring/files/remediate_drift.sh) runs the baseline on
+that one machine (if auto-remediation is on), logs what it fixed, and asks Nagios to re-check.
+
+**Infrastructure drift** (a machine deleted or stopped, a port changed) is caught by
+`terraform plan -detailed-exitcode` (`.\run.ps1 infra`).
 
 ---
 
-## 📊 Rubric Alignment (100 Marks Total)
+## Running it
 
-| Rubric Component | Marks | Implementation in this Repository |
-| :--- | :---: | :--- |
-| **Project Report / File** | **20** | Full academic report in [`PROJECT_REPORT.md`](PROJECT_REPORT.md) covering Problem Statement, Architecture, Code Evidence, Test Results & References. |
-| **Presentation & Live Demo** | **10** | 5-minute presentation script and 60-second live demonstration script in [`scripts/simulate_demo.py`](scripts/simulate_demo.py). |
-| **Viva Voce** | **20** | Comprehensive Q&A guide with 18 common questions and exact answers in [`VIVA_AND_PRESENTATION_GUIDE.md`](VIVA_AND_PRESENTATION_GUIDE.md). |
-| **Project Quality & Implementation** | **50** | Working Terraform modules, Ansible roles, Nagios configs, 9 passing automated unit tests, and self-healing automation. |
-| **TOTAL** | **100** | **Complete Full-Marks Coverage** |
+**Requirements:** Docker Desktop (running), Terraform ≥ 1.5, Python 3 (for the tests), PowerShell.
+
+```powershell
+.\run.ps1 up          # Terraform creates the machines, Ansible configures them (~3-5 min first time)
+.\run.ps1 open        # opens Nagios and the three machine websites
+```
+
+| Link | What |
+|---|---|
+| http://localhost:8090/nagios4 | Nagios (user `nagiosadmin`, password `drift123`) → *Services* |
+| http://localhost:8091 / 8092 / 8093 | websites of node1 / node2 / node3 |
+
+### All commands
+
+| Command | What it does |
+|---|---|
+| `.\run.ps1 up` | create + configure everything |
+| `.\run.ps1 status` | check every machine now and print the fleet report |
+| `.\run.ps1 break node2 config` | make a manual change (drift). Also: `service`, `website`, `permissions`, `ssh`, `package`, `all` |
+| `.\run.ps1 shell node2` | open a terminal on node2 to change things yourself |
+| `.\run.ps1 fix node2` | run Ansible to restore the baseline (omit the name for all machines) |
+| `.\run.ps1 auto on` / `off` | Nagios fixes drift automatically / only alerts |
+| `.\run.ps1 log` | what auto-remediation has done |
+| `.\run.ps1 infra` | infrastructure drift check with `terraform plan` |
+| `.\run.ps1 test` | unit tests + `terraform validate` + Ansible syntax check |
+| `.\run.ps1 down` | delete everything |
+
+### Live demo (about 3 minutes)
+
+1. `.\run.ps1 status` → all 3 machines **in sync**. Show Nagios: everything green.
+2. `.\run.ps1 auto off`
+3. `.\run.ps1 break node2 all` (or `.\run.ps1 shell node2` and edit `/etc/fleet/app.conf` with `nano`).
+4. Within ~1 minute Nagios turns **node2 / Configuration Drift red**. Click it to show exactly what changed.
+   Open http://localhost:8092 to show the defaced page.
+5. `.\run.ps1 status` → node2 **DRIFTED**, node1 and node3 **in sync**.
+6. `.\run.ps1 fix node2` → Ansible restores it → Nagios turns green.
+7. `.\run.ps1 auto on`, then `.\run.ps1 break node1 config` – and don't touch anything:
+   Nagios detects it and fixes it by itself. `.\run.ps1 log` shows what was fixed.
 
 ---
 
-## 🚀 Quick Start (Running the Project)
+## Tests
 
-### 1. Run Automated Tests (Verification)
-Run all 9 unit tests verifying Terraform, Ansible playbooks, and Nagios plugin exit codes:
-```bash
-python scripts/run_all_tests.py
+```powershell
+python -m pytest tests -v              # all tests (lab tests are skipped if the lab is not running)
+python -m pytest tests -v -m "not slow"  # skip the 2-minute "Nagios heals by itself" test
 ```
 
-### 2. Run the 60-Second Live Presentation Demo
-Demonstrates the full end-to-end lifecycle (Provisioning -> Ansible Rollout -> Nagios OK -> Simulated Outage -> Nagios CRITICAL -> Ansible Self-Healing -> Nagios Recovery):
-```bash
-python scripts/simulate_demo.py
-```
+- [`tests/test_check_drift.py`](tests/test_check_drift.py) – unit tests for the plugin, using
+  **real Ansible output captured from the lab** ([`tests/fixtures/`](tests/fixtures)).
+- [`tests/test_lab.py`](tests/test_lab.py) – integration tests on the running lab: every kind of
+  manual change is detected, only the changed machine is reported, check mode changes nothing,
+  manual and automatic fixes work, SOFT states are ignored, Nagios needs a login,
+  and `terraform plan` shows no infrastructure drift.
 
-### 3. Run the Web Application Locally
-Start the interactive Web Application on Port 5000:
-```bash
-python ansible/roles/webapp/files/app.py
-```
-Open your browser at `http://localhost:5000`:
-- Click **"Simulate Service Failure"** to inject a simulated outage.
-- Click **"Restore Normal State"** to restore healthy status.
-
-### 4. Run Nagios Custom Plugin CLI
-Test the custom Nagios plugin directly:
-```bash
-python ansible/roles/nagios/files/plugins/check_webapp_health.py -H 127.0.0.1 -p 5000 -u /health
-```
-
-### 5. Run with Docker Compose (Optional)
-To launch the full containerized stack (Web App + Nagios Core Web UI on port 8080):
-```bash
-docker compose up -d
-```
-Access Nagios Dashboard at: `http://localhost:8080/nagios` (User: `nagiosadmin`, Pass: `admin123`).
-
----
-
-## 📁 Repository Structure
+## Repository layout
 
 ```
-├── terraform/                      # Infrastructure as Code
-│   ├── main.tf                    # VPC, Security Groups, Compute & Dynamic Inventory
-│   ├── variables.tf               # Configurable parameters
-│   ├── outputs.tf                 # Generated IP endpoints
-│   ├── inventory.tpl              # Template for Ansible inventory
-│   └── terraform.tfvars.example   # Sample variables file
-├── ansible/                        # Configuration Management
-│   ├── ansible.cfg                # Settings & role search paths
-│   ├── inventory/                 # Dynamic inventory targets & group vars
-│   ├── playbooks/                 # site.yml, webapp.yml, nagios.yml, self_heal.yml
-│   └── roles/                     # common, webapp, nagios roles
-├── nagios/sample_configs/         # Production Nagios object definitions (hosts, services, commands)
-├── tests/                         # Automated test suite (test_nagios_plugin.py, test_configurations.py)
-├── scripts/                       # Execution and demo scripts (run_all_tests.py, simulate_demo.py)
-├── docker-compose.yml             # Local Docker Compose setup
-├── PROJECT_REPORT.md              # Complete 20-mark Project Report
-├── VIVA_AND_PRESENTATION_GUIDE.md # Complete 20-mark Viva Q&A & Presentation Script
-└── README.md                      # Project documentation
+terraform/                  Infrastructure as Code
+  main.tf                   network, machines, SSH key, generated inventory
+  variables.tf, outputs.tf
+  images/node, images/control   what a "fresh server" looks like (SSH + Python only)
+  inventory.tftpl           Ansible inventory template
+ansible/
+  baseline.yml              apply / check the baseline
+  site.yml                  full setup: baseline + monitoring
+  group_vars/fleet.yml      THE BASELINE (desired configuration)
+  roles/baseline/           rules every fleet machine must follow
+  roles/monitoring/         installs Nagios, the drift check and the auto-fix handler
+    files/check_drift.py    custom Nagios plugin (+ drift-report command)
+    files/remediate_drift.sh  Nagios event handler
+    templates/fleet.cfg.j2  Nagios hosts/services generated from the inventory
+tests/                      unit + integration tests
+run.ps1                     one script to run the whole lab and the demo
+PROJECT_REPORT.pdf / .docx  project report (LPU INT333 format)
+DEMO_CHEATSHEET.pdf         live demo steps
 ```
-
----
-
-## 👨‍💻 Key Innovation & Features
-1. **Dynamic Toolchain Integration**: Terraform automatically creates Ansible's `hosts.ini` inventory upon infrastructure creation.
-2. **Custom Nagios Plugin (`check_webapp_health.py`)**: Fulfills syllabus Unit III Practical 8. Measures response latency, validates JSON status, and exits with standard Nagios codes (0=OK, 1=WARNING, 2=CRITICAL, 3=UNKNOWN).
-3. **Automated Self-Healing (`self_heal.yml`)**: Ansible auto-remediates failures detected by monitoring, driving down MTTR.

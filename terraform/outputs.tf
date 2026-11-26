@@ -1,19 +1,18 @@
-output "web_server_ip" {
-  description = "Public IP address of the provisioned Web Server"
-  value       = var.enable_aws ? (length(aws_instance.web_server) > 0 ? aws_instance.web_server[0].public_ip : "N/A") : var.simulated_web_ip
+output "nagios_url" {
+  description = "Nagios dashboard (user: nagiosadmin, password: see ansible/group_vars/all.yml)"
+  value       = "http://localhost:${var.nagios_port}/nagios4"
 }
 
-output "nagios_server_ip" {
-  description = "Public IP address of the provisioned Nagios Server"
-  value       = var.enable_aws ? (length(aws_instance.nagios_server) > 0 ? aws_instance.nagios_server[0].public_ip : "N/A") : var.simulated_nagios_ip
+output "node_websites" {
+  description = "Each fleet machine's website"
+  value       = { for i, name in local.node_names : name => "http://localhost:${var.node_web_port_start + i}" }
 }
 
-output "nagios_web_url" {
-  description = "Direct URL to access the Nagios Core monitoring dashboard"
-  value       = "http://${var.enable_aws ? (length(aws_instance.nagios_server) > 0 ? aws_instance.nagios_server[0].public_ip : "localhost") : "localhost:8080"}/nagios"
+output "fleet_ips" {
+  description = "Private IP address of every fleet machine"
+  value       = local.node_ips
 }
 
-output "web_application_url" {
-  description = "Direct URL to access the deployed Web Application"
-  value       = "http://${var.enable_aws ? (length(aws_instance.web_server) > 0 ? aws_instance.web_server[0].public_ip : "localhost") : "localhost:5000"}"
+output "next_step" {
+  value = "Configure everything with:  docker exec control ansible-playbook /opt/drift/ansible/site.yml"
 }

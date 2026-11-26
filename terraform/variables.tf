@@ -1,71 +1,40 @@
-variable "aws_region" {
-  description = "AWS region for provisioning"
+variable "docker_host" {
+  description = "Docker engine to create the lab on. Windows/Docker Desktop default; use unix:///var/run/docker.sock on Linux/macOS."
   type        = string
-  default     = "us-east-1"
+  default     = "npipe:////./pipe/docker_engine"
 }
 
-variable "project_name" {
-  description = "Prefix identifier for all resources"
+variable "project" {
+  description = "Prefix for every resource Terraform creates"
   type        = string
-  default     = "int333-devops"
+  default     = "drift"
 }
 
-variable "environment" {
-  description = "Deployment environment (dev/staging/prod)"
-  type        = string
-  default     = "dev"
+variable "node_count" {
+  description = "How many fleet machines to create (node1, node2, ...)"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.node_count >= 1 && var.node_count <= 9
+    error_message = "node_count must be between 1 and 9."
+  }
 }
 
-variable "enable_aws" {
-  description = "Set to true to provision on real AWS, or false for local/simulated configuration"
-  type        = bool
-  default     = false
+variable "subnet" {
+  description = "Private network the machines live on"
+  type        = string
+  default     = "10.77.0.0/24"
 }
 
-variable "vpc_cidr" {
-  description = "VPC CIDR block"
-  type        = string
-  default     = "10.0.0.0/16"
+variable "nagios_port" {
+  description = "Port on your computer for the Nagios web UI"
+  type        = number
+  default     = 8090
 }
 
-variable "subnet_cidr" {
-  description = "Public Subnet CIDR block"
-  type        = string
-  default     = "10.0.1.0/24"
-}
-
-variable "ami_id" {
-  description = "Ubuntu 22.04 LTS AMI ID"
-  type        = string
-  default     = "ami-0c7217cdde317cfec" # Canonical Ubuntu 22.04 LTS (us-east-1)
-}
-
-variable "instance_type" {
-  description = "EC2 instance size"
-  type        = string
-  default     = "t2.micro"
-}
-
-variable "key_pair_name" {
-  description = "SSH Key pair name for EC2 instances"
-  type        = string
-  default     = "devops-key"
-}
-
-variable "ssh_user" {
-  description = "Default SSH user for configuration management"
-  type        = string
-  default     = "ubuntu"
-}
-
-variable "simulated_web_ip" {
-  description = "IP address used when running locally / simulated"
-  type        = string
-  default     = "192.168.56.10"
-}
-
-variable "simulated_nagios_ip" {
-  description = "IP address for Nagios server when simulated"
-  type        = string
-  default     = "192.168.56.20"
+variable "node_web_port_start" {
+  description = "node1's website is published on this port, node2 on the next one, and so on"
+  type        = number
+  default     = 8091
 }
